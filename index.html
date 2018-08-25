@@ -1,0 +1,294 @@
+<html>
+  <head>
+    <title>Порно с конями | 18+</title>
+    <meta charset=utf-8>
+    <meta name=description content="text/html; charset=utf-8">
+    <meta name=viewport content="width=device-width, initial-scale=1">
+    <style>
+        body {
+            background-color: black;
+        }
+        canvas {
+            background-color: white;
+            width: 800px;
+            height: 600px;
+        }
+    </style>
+  </head>
+  <body>
+        <div style="text-align: center">
+            <canvas id="canvas" width="800" height="600"></canvas>
+        </div>
+  </body>
+  <<script>
+        // Box width
+        var bw = 800;
+        // Box height
+        var bh = 600;
+        var gridSize = 50;
+
+        var canvas = document.getElementById("canvas");
+        var context = canvas.getContext("2d");
+        context.translate(0.5, 0.5);
+        context.lineWidth = '1';
+        context.lineJoin = 'miter';
+        context.globalAlpha = 1;
+        canvas.onclick = function(event) {
+            mapX = event.x - event.target.offsetLeft;
+            mapX = Math.floor(mapX / gridSize)
+            mapY = event.y - event.target.offsetTop;
+            mapY = Math.floor(mapY / gridSize)
+            map.findPath(mapX, mapY);
+            map.drawBoard();
+        };
+
+        function drawBlock(x, y) {
+            var oldFillStyle = context.fillStyle;
+            var realX = x * gridSize;
+            var realY = y * gridSize;
+            if (x < 0 || x * gridSize > bw) {
+                return -1;
+            }
+            if (y < 0 || y * gridSize > bh) {
+                return -1;
+            }
+            context.fillStyle = '#333';
+            context.moveTo(realX, realY);
+            context.fillRect(realX, realY, gridSize, gridSize);
+            context.fillStyle = oldFillStyle;
+        }
+        function PathGrid() {
+            this.__nodes = [];
+            this.__node_map = {};
+            this.push = function(node) {
+                this.__nodes.push(node);
+                if (!this.__node_map.hasOwnProperty(node.x)) {
+                    this.__node_map[node.x] = {};
+                }
+                this.__node_map[node.x][node.y] = node;
+                this.relink();
+            }
+            this.draw = function() {
+                for (x in this.__node_map) {
+                    for (y in this.__node_map[x]) {
+                        var node = this.__node_map[x][y];
+                        node.draw();
+                    }
+                }
+            }
+            this.get = function (x, y) {
+                if (this.__node_map.hasOwnProperty(x)) {
+                    if (this.__node_map[x].hasOwnProperty(y)) {
+                        return this.__node_map[x][y];
+                    }
+                }
+                return null;
+            }
+            this.relink = function() {
+                for (x in this.__node_map) {
+                    for (y in this.__node_map[x]) {
+                        var node = this.__node_map[x][y];
+                        node.links = [];
+                        if (link = this.get(node.x - 1, node.y)) {
+                            node.links.push(link);
+                        }
+                        if (link = this.get(node.x + 1, node.y)) {
+                            node.links.push(link);
+                        }
+                        if (link = this.get(node.x , node.y - 1)) {
+                            node.links.push(link);
+                        }
+                        if (link = this.get(node.x , node.y + 1)) {
+                            node.links.push(link);
+                        }
+                    }
+                }
+            }
+        }
+        var map = new function () {
+            var start = [0, 4];
+            var last = [start[0], start[1]];
+            var blocks = [
+                [3,0], [4,0], [5,0], [6,0],
+                [1,1], [2,1], [6,1], [8,1], [11,1], [13,1], [14,1],
+                [1,2], [2,2], [6,2], [8,2], [11,2], [13,2], [14,2], [15,2],
+                [1,3], [2,3], [8,3], [11,3], [13,3],
+                [1,4], [2,4], [6,4], [11,4], [13,4],
+                [1,5], [2,5], [4,5], [5,5], [6,5], [6,5], [8,5], [9,5], [10,5], [11,5], [13,5], [14,5],
+                [1,6], [2,6], 
+                [4,7], [5,7], [6,7], [7,7], [9,7], [12,7], [14,7],
+                [1,8], [2,8], [4,8], [7,8], [8,8], [9,8], [11,8], [12,8], [14, 8],
+                [1,9], [2,9], [7,9], [11,9], [14,9],
+               [1,10], [2,10], [4,10], [6,10], [7,10], [9,10], [10,10], [11,10], [13,10], [14,10],
+               [7,11], [13,11],
+            ];
+            var map = {};
+            for (n in blocks) {
+                var block = blocks[n];
+                map[block[0] + "," + block[1]] = block;
+            }
+            this.path = [];
+            this.path_grid = new PathGrid();
+
+            this.get = function (x, y) {
+                if (!map.hasOwnProperty(x + "," + y))
+                    return null;
+                return map[x + ',' + y];
+            };
+
+            for (i = 0; i < bw / gridSize; i++) {
+                for (c = 0; c < bh  / gridSize; c++) {
+                    if (!this.get(i, c)) {
+                        this.path_grid.push(new Node(i, c));
+                    }
+                }
+            }
+
+            this.drawBoard = function() {
+                // Padding
+                var p = 0;
+                var k = 0;
+                context.strokeStyle = "black";
+                context.fillStyle = "white";
+                context.beginPath();
+                context.fillRect(0, 0, bw, bh);
+                context.beginPath();
+                for (var x = 0; x <= bw; x += gridSize) {
+                    context.moveTo(k + x + p, p);
+                    context.lineTo(k + x + p, bh + p);
+                }
+
+                for (var x = 0; x <= bh; x += gridSize) {
+                    context.moveTo(p, k + x + p);
+                    context.lineTo(bw + p, k + x + p);
+                }
+                context.stroke();
+                for (n in map) {
+                    block = map[n];
+                    drawBlock(block[0], block[1]);
+                }
+                // this.path_grid.draw();
+                tmp = context.fillStyle;
+                context.fillStyle = '#800';
+                context.beginPath();
+                context.fillRect(start[0] * gridSize + 3 * gridSize / 8, start[1] * gridSize + 3 * gridSize / 8, gridSize / 4, gridSize / 4);
+                context.fillStyle = tmp;
+                if (this.path) {
+                    var start_node = this.path_grid.get(start[0], start[1]);
+                    context.moveTo(start_node.x * gridSize + gridSize / 2, start_node.y * gridSize + gridSize / 2)
+                    context.beginPath();
+                    for (n in this.path) {
+                        var node = this.path[n];
+                        // context.beginPath();
+                        context.lineTo(node.x * gridSize + gridSize / 2, node.y * gridSize + gridSize / 2)
+                    }
+                    context.strokeStyle = 'red';
+                    context.stroke();
+                    context.moveTo(start[0], start[1]);
+                }
+            };
+            this.findPath = function(x, y) {
+                var frontier = [];
+                var visited = {};
+                var v2 = {};
+                frontier.push(this.path_grid.get(start[0], start[1]));
+                visited[start] = null;
+                if (x == last[0] && y == last[1]) {
+                    if (this.path.length !== 0) {
+                        var finish = this.path.pop();
+                        this.path.push(finish);
+                        start[0] = finish.x;
+                        start[1] = finish.y;
+                        this.drawBoard();
+                        this.path = [];
+                        return this.path;
+                    }
+                } else {
+                    last = [x, y];
+                }
+
+                while (frontier.length !== 0) {
+                    current = frontier.shift();
+                    if (current.x === x && current.y == y)
+                        break;
+                    for (n in current.links) {
+                        next = current.links[n];
+                        if (!visited.hasOwnProperty(next)) {
+                            frontier.push(next)
+                            visited[next] = current;
+                        }
+                    }
+                }
+                for (n in visited) {
+                    node = visited[n];
+                    if (!node) {
+                        continue;
+                    }
+                    if (!v2.hasOwnProperty([node.x, node.y].join(','))) {
+                        v2[[node.x, node.y].join(',')] = 0;
+                    }
+                    v2[[node.x, node.y].join(',')]++;
+                }
+                if (x + ',' + y in visited) {
+                    var tmp_path = [this.path_grid.get(x, y)];
+                    var k = x + ',' + y;
+                    var __n = 0
+                    while (k !== start.join(',')) {
+                        tmp_path.push(visited[k]);
+                        k = visited[k].x + ',' + visited[k].y;
+                        n++;
+                        if (n >= 500) {
+                            console.log('ERROR');
+                            break;
+                        }
+                    };
+                    tmp_path.reverse();
+                    this.path = tmp_path;
+                    return tmp_path;
+                } else {
+                    console.log(x + ',' + y + ' not found');
+                    this.path = [];
+                    return [];
+                }
+            }
+        };        
+
+        function Node(x, y) {
+            this.x = x;
+            this.y = y;
+            this.__x = x * gridSize + gridSize / 2;
+            this.__y = y * gridSize + gridSize / 2;
+            this.links = [];
+            this.context = null;
+            this.setContext = function (ctx) { self.context = ctx; }
+            this.draw = function() {
+                if (!context) {
+                    return -1;
+                }
+                var oldStrokeStyle = context.fillStyle;
+                context.fillStyle = 'green';
+                // context.beginPath();
+                context.moveTo(this.__x, this.__y);
+                context.arc(this.__x, this.__y, gridSize / 4, 0, 6.3, false);
+                context.fill();
+                context.fillStyle = oldStrokeStyle;
+                context.beginPath();
+                for (n in this.links) {
+                    var x = this.links[n].__x;
+                    var y = this.links[n].__y;
+                    var tmp = context.strokeStyle;
+                    context.strokeStyle = '#55aa00';
+                    context.moveTo(this.__x, this.__y);
+                    context.lineTo(x, y);
+                    context.stroke();
+                    context.strokeStyle = tmp;
+                }
+            };
+            this.toString = function() {
+                return this.x + "," + this.y;
+            }
+        }        
+
+        map.drawBoard();
+  </script>
+</html>
