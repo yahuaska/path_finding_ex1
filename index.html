@@ -25,7 +25,7 @@
         var bw = 800;
         // Box height
         var bh = 600;
-        var gridSize = 50;
+        var gridSize = 25;
 
         var canvas = document.getElementById("canvas");
         var context = canvas.getContext("2d");
@@ -42,7 +42,7 @@
             map.drawBoard();
         };
 
-        function drawBlock(x, y) {
+        function drawBlock(x, y, style='#333') {
             var oldFillStyle = context.fillStyle;
             var realX = x * gridSize;
             var realY = y * gridSize;
@@ -52,7 +52,7 @@
             if (y < 0 || y * gridSize > bh) {
                 return -1;
             }
-            context.fillStyle = '#333';
+            context.fillStyle = style;
             context.moveTo(realX, realY);
             context.fillRect(realX, realY, gridSize, gridSize);
             context.fillStyle = oldFillStyle;
@@ -123,9 +123,18 @@
                [7,11], [13,11],
             ];
             var map = {};
+            var fow = [];
             for (n in blocks) {
                 var block = blocks[n];
                 map[block[0] + "," + block[1]] = block;
+            }
+            for (xx = 0; xx < bw/gridSize; xx++) {
+                for (yy = 0; yy < bw/gridSize; yy++) {
+                    if (xx == start[0] && yy == start[1]) {
+                        continue;
+                    }
+                    fow.push(xx + "," + yy);
+                }
             }
             this.path = [];
             this.path_grid = new PathGrid();
@@ -168,6 +177,10 @@
                     drawBlock(block[0], block[1]);
                 }
                 // this.path_grid.draw();
+                for (n in fow) {
+                    block = fow[n].split(',');
+                    drawBlock(block[0], block[1], 'black');
+                }
                 tmp = context.fillStyle;
                 context.fillStyle = '#800';
                 context.beginPath();
@@ -195,6 +208,14 @@
                 visited[start] = null;
                 if (x == last[0] && y == last[1]) {
                     if (this.path.length !== 0) {
+                        for (n in this.path) {
+                            node = this.path[n];
+                            fow = fow.filter(function(xy) {
+                                var block = xy.split(',');
+                                block.map(function (x) { return parseInt(x); });
+                                return (Math.abs(block[0] - node.x) > 1) || (Math.abs(block[1] - node.y) > 1);
+                            });
+                        }
                         var finish = this.path.pop();
                         this.path.push(finish);
                         start[0] = finish.x;
